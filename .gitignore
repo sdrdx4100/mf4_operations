@@ -37,7 +37,7 @@ env/
 Thumbs.db
 
 # PyInstaller
-*.spec
+# Note: build_exe.spec is tracked for building releases
 
 # Test files
 *.mf4

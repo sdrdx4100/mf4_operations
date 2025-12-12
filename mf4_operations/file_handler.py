@@ -105,9 +105,9 @@ class FileHandler:
                         if len(timestamps) > 1:
                             start = timestamps[0]
                             end = timestamps[-1]
-                            new_timestamps = pd.Series(
-                                range(int(start), int(end), int(resample * 1000))
-                            ) / 1000.0
+                            # Use numpy.arange for precise floating-point resampling
+                            import numpy as np
+                            new_timestamps = np.arange(start, end, resample)
                             # Simple interpolation
                             resampled = pd.Series(signal.samples, index=timestamps)
                             resampled = resampled.reindex(
@@ -115,7 +115,7 @@ class FileHandler:
                             )
                             data_dict[channel_name] = resampled.values
                             if 'time' not in data_dict:
-                                data_dict['time'] = new_timestamps.values
+                                data_dict['time'] = new_timestamps
                         else:
                             data_dict[channel_name] = signal.samples
                             if 'time' not in data_dict:

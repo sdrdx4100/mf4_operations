@@ -6,6 +6,7 @@ This demonstrates the core functionality without GUI
 import logging
 import numpy as np
 from pathlib import Path
+from tempfile import gettempdir
 from asammdf import MDF, Signal
 
 # Setup logging
@@ -102,8 +103,9 @@ def demo_file_operations():
     logger.info("Demo: File Operations")
     logger.info("="*60)
     
-    # Create sample file
-    sample_file = "/tmp/sample_measurement.mf4"
+    # Create sample file (cross-platform temp directory)
+    temp_dir = Path(gettempdir())
+    sample_file = str(temp_dir / "sample_measurement.mf4")
     if not create_sample_mf4_file(sample_file):
         logger.error("Failed to create sample file")
         return False
@@ -140,7 +142,7 @@ def demo_file_operations():
         logger.info(df.head().to_string(index=False))
     
     # Export to CSV
-    csv_file = "/tmp/sample_export.csv"
+    csv_file = str(temp_dir / "sample_export.csv")
     logger.info(f"\n✓ Exporting to CSV: {csv_file}")
     
     if handler.export_to_csv(csv_file, selected_channels):
@@ -186,16 +188,17 @@ def demo_settings():
     
     # Test history
     logger.info("\n✓ Testing history operations:")
-    manager.add_to_history('/tmp/test1.mf4', ['channel_A', 'channel_B'])
-    manager.add_to_history('/tmp/test2.mf4', ['channel_C', 'channel_D', 'channel_E'])
-    manager.add_to_history('/tmp/test1.mf4', ['channel_A', 'channel_F'])
+    temp_dir = Path(gettempdir())
+    manager.add_to_history(str(temp_dir / 'test1.mf4'), ['channel_A', 'channel_B'])
+    manager.add_to_history(str(temp_dir / 'test2.mf4'), ['channel_C', 'channel_D', 'channel_E'])
+    manager.add_to_history(str(temp_dir / 'test1.mf4'), ['channel_A', 'channel_F'])
     
     # Get recent labels
     recent = manager.get_recent_labels(limit=5)
     logger.info(f"  Recent labels: {recent}")
     
     # Get history for specific file
-    history = manager.get_history_for_file('/tmp/test1.mf4')
+    history = manager.get_history_for_file(str(temp_dir / 'test1.mf4'))
     logger.info(f"  History entries for test1.mf4: {len(history)}")
     
     logger.info("\n✓ Settings management demo completed successfully")
