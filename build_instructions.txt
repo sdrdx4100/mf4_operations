@@ -1,0 +1,56 @@
+# Build Instructions for MF4 Operations
+
+## Prerequisites
+1. Python 3.8 or higher
+2. pip package manager
+
+## Setup Development Environment
+
+1. Install dependencies:
+   ```
+   pip install -r requirements.txt
+   ```
+
+2. Install PyInstaller for building executable:
+   ```
+   pip install pyinstaller
+   ```
+
+## Running from Source
+
+Run the application directly:
+```
+python -m mf4_operations.main
+```
+
+Or using the entry point:
+```
+python setup.py install
+mf4-operations
+```
+
+## Building Executable
+
+### For Windows:
+```
+pyinstaller build_exe.spec
+```
+
+The executable will be created in the `dist/` directory.
+
+### For Linux:
+```
+pyinstaller build_exe.spec
+```
+
+### For macOS:
+```
+pyinstaller build_exe.spec
+```
+
+## Notes
+
+- The executable is platform-specific
+- First build may take several minutes
+- Executable size will be around 100-200 MB due to included libraries
+- Built executable includes all dependencies (no Python installation required)
