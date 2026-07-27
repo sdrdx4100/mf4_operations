@@ -145,14 +145,31 @@ def demo_file_operations():
     csv_file = str(temp_dir / "sample_export.csv")
     logger.info(f"\n✓ Exporting to CSV: {csv_file}")
     
+    csv_size = None
     if handler.export_to_csv(csv_file, selected_channels):
         logger.info(f"  Export successful!")
         # Show file size
-        size = Path(csv_file).stat().st_size
-        logger.info(f"  File size: {size:,} bytes")
+        csv_size = Path(csv_file).stat().st_size
+        logger.info(f"  File size: {csv_size:,} bytes")
     else:
         logger.error("  Export failed")
-    
+
+    # Export to Parquet
+    parquet_file = str(temp_dir / "sample_export.parquet")
+    logger.info(f"\n✓ Exporting to Parquet: {parquet_file}")
+
+    if handler.export_to_parquet(parquet_file, selected_channels):
+        logger.info(f"  Export successful!")
+        parquet_size = Path(parquet_file).stat().st_size
+        logger.info(f"  File size: {parquet_size:,} bytes")
+        if csv_size:
+            logger.info(
+                f"  Parquet is {100*(1-parquet_size/csv_size):.1f}% "
+                f"smaller than CSV"
+            )
+    else:
+        logger.error("  Export failed (is pyarrow installed?)")
+
     # Test resampling
     logger.info(f"\n✓ Testing resampling (0.1s intervals):")
     df_resampled = handler.get_channel_data(selected_channels, resample=0.1)

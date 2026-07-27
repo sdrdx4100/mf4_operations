@@ -51,13 +51,19 @@ class MF4OperationsGUI:
         file_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="File", menu=file_menu)
         file_menu.add_command(label="Open File...", command=self._open_file)
-        file_menu.add_command(label="Export to CSV...", command=self._export_csv)
+        file_menu.add_separator()
+        file_menu.add_command(label="Export to CSV...",
+                              command=lambda: self._export_data('csv'))
+        file_menu.add_command(label="Export to Parquet...",
+                              command=lambda: self._export_data('parquet'))
         file_menu.add_separator()
         file_menu.add_command(label="Exit", command=self._on_close)
-        
+
         tools_menu = tk.Menu(menubar, tearoff=0)
         menubar.add_cascade(label="Tools", menu=tools_menu)
         tools_menu.add_command(label="Plot Selected Channels", command=self._plot_channels)
+        tools_menu.add_separator()
+        tools_menu.add_command(label="Select All (filtered)", command=self._select_all)
         tools_menu.add_command(label="Clear Selection", command=self._clear_selection)
         
         help_menu = tk.Menu(menubar, tearoff=0)
@@ -103,12 +109,26 @@ class MF4OperationsGUI:
             font=('', 8, 'italic')
         ).pack(anchor=tk.W)
         
-        # Export button
+        # Export section
+        export_frame = ttk.LabelFrame(left_panel, text="Export", padding=10)
+        export_frame.pack(fill=tk.X, pady=5)
+
         ttk.Button(
-            left_panel, text="Export Selected to CSV...",
-            command=self._export_csv
-        ).pack(fill=tk.X, pady=5)
-        
+            export_frame, text="Export to CSV...",
+            command=lambda: self._export_data('csv')
+        ).pack(fill=tk.X, pady=(0, 5))
+
+        ttk.Button(
+            export_frame, text="Export to Parquet...",
+            command=lambda: self._export_data('parquet')
+        ).pack(fill=tk.X)
+
+        ttk.Label(
+            export_frame,
+            text="Parquet: compact & fast for large data",
+            font=('', 8, 'italic')
+        ).pack(anchor=tk.W, pady=(5, 0))
+
         # Plot button
         ttk.Button(
             left_panel, text="Plot Selected Channels",
@@ -132,6 +152,19 @@ class MF4OperationsGUI:
         self.search_var.trace('w', self._on_search)
         search_entry = ttk.Entry(search_frame, textvariable=self.search_var)
         search_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+
+        # Selection helper buttons
+        button_frame = ttk.Frame(channel_frame)
+        button_frame.pack(fill=tk.X, pady=(0, 5))
+
+        ttk.Button(
+            button_frame, text="Select All",
+            command=self._select_all
+        ).pack(side=tk.LEFT)
+        ttk.Button(
+            button_frame, text="Clear",
+            command=self._clear_selection
+        ).pack(side=tk.LEFT, padx=5)
         
         # Channel listbox with scrollbar
         list_frame = ttk.Frame(channel_frame)
@@ -269,6 +302,19 @@ class MF4OperationsGUI:
         self.channel_listbox.selection_clear(0, tk.END)
         self.selected_channels = []
         self.selection_label.config(text="Selected: 0 channels")
+
+    def _select_all(self):
+        """Select all channels currently shown in the listbox"""
+        count = self.channel_listbox.size()
+        if count == 0:
+            return
+        self.channel_listbox.selection_set(0, tk.END)
+        self.selected_channels = [
+            self.channel_listbox.get(i) for i in range(count)
+        ]
+        self.selection_label.config(
+            text=f"Selected: {len(self.selected_channels)} channels"
+        )
     
     def _load_history_for_file(self):
         """Load and apply label selection history for current file"""
@@ -311,38 +357,58 @@ class MF4OperationsGUI:
             text=f"Selected: {len(self.selected_channels)} channels"
         )
     
-    def _export_csv(self):
-        """Export selected channels to CSV"""
+    # Per-format save dialog configuration
+    _EXPORT_FORMATS = {
+        'csv': {
+            'title': "Export to CSV",
+            'extension': ".csv",
+            'filetypes': [("CSV files", "*.csv"), ("All files", "*.*")],
+        },
+        'parquet': {
+            'title': "Export to Parquet",
+            'extension': ".parquet",
+            'filetypes': [("Parquet files", "*.parquet"), ("All files", "*.*")],
+        },
+    }
+
+    def _export_data(self, fmt: str):
+        """Export selected channels in the given format ('csv' or 'parquet')"""
+        if not self.current_file:
+            messagebox.showwarning("Warning", "No file loaded")
+            return
+
         if not self.selected_channels:
             messagebox.showwarning("Warning", "No channels selected")
             return
-        
+
+        config = self._EXPORT_FORMATS.get(fmt, self._EXPORT_FORMATS['csv'])
+
         # Get output file path
         output_path = filedialog.asksaveasfilename(
-            title="Export to CSV",
-            defaultextension=".csv",
-            filetypes=[("CSV files", "*.csv"), ("All files", "*.*")],
-            initialfile=Path(self.current_file).stem + ".csv"
+            title=config['title'],
+            defaultextension=config['extension'],
+            filetypes=config['filetypes'],
+            initialfile=Path(self.current_file).stem + config['extension']
         )
-        
+
         if not output_path:
             return
-        
+
         # Get resample rate
         resample_rate = self.resample_var.get()
         if resample_rate <= 0:
             resample_rate = None
-        
+
         # Export in background
-        self.status_var.set("Exporting to CSV...")
+        self.status_var.set(f"Exporting to {fmt.upper()}...")
         self.root.update()
-        
+
         def export_thread():
-            success = self.file_handler.export_to_csv(
-                output_path, self.selected_channels, resample_rate
+            success = self.file_handler.export_data(
+                output_path, self.selected_channels, resample_rate, fmt=fmt
             )
             self.root.after(0, lambda: self._on_export_complete(success, output_path))
-        
+
         threading.Thread(target=export_thread, daemon=True).start()
     
     def _on_export_complete(self, success: bool, output_path: str):
@@ -418,7 +484,7 @@ class MF4OperationsGUI:
     
     def _show_about(self):
         """Show about dialog"""
-        about_text = """MF4 Operations v1.0.0
+        about_text = """MF4 Operations v1.1.0
 
 A fast and lightweight application for handling
 MF4/MDF/DAT measurement files.
@@ -426,7 +492,7 @@ MF4/MDF/DAT measurement files.
 Features:
 • Load MF4/MDF/DAT files
 • Preview and select channels
-• Export to CSV with optional resampling
+• Export to CSV or Parquet with optional resampling
 • Plot channel data
 • Save label selection history
 

@@ -45,9 +45,18 @@ def test_file_handler():
         assert hasattr(handler, 'get_channels')
         assert hasattr(handler, 'get_channel_data')
         assert hasattr(handler, 'export_to_csv')
+        assert hasattr(handler, 'export_to_parquet')
+        assert hasattr(handler, 'export_data')
         assert hasattr(handler, 'get_file_info')
-        
+
         logger.info("✓ FileHandler has all required methods")
+
+        # Test format detection
+        assert FileHandler.detect_export_format('out.csv') == 'csv'
+        assert FileHandler.detect_export_format('out.parquet') == 'parquet'
+        assert FileHandler.detect_export_format('out.pq') == 'parquet'
+        assert FileHandler.detect_export_format('out.unknown') == 'csv'
+        logger.info("✓ Export format detection works")
         return True
     except Exception as e:
         logger.error(f"✗ FileHandler test failed: {e}")

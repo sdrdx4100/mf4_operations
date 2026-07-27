@@ -145,32 +145,106 @@ class FileHandler:
             logger.error(f"Error getting channel data: {e}")
             return None
     
+    # Mapping of file extensions to logical export formats
+    SUPPORTED_EXPORT_FORMATS = {
+        '.csv': 'csv',
+        '.parquet': 'parquet',
+        '.pq': 'parquet',
+    }
+
+    @classmethod
+    def detect_export_format(cls, output_path: str) -> str:
+        """
+        Determine the export format from a file path's extension.
+
+        Args:
+            output_path: Target output path
+
+        Returns:
+            Logical format name ('csv' or 'parquet'). Defaults to 'csv'
+            when the extension is unknown.
+        """
+        ext = Path(output_path).suffix.lower()
+        return cls.SUPPORTED_EXPORT_FORMATS.get(ext, 'csv')
+
+    def export_data(self, output_path: str, channel_names: List[str],
+                    resample: Optional[float] = None,
+                    fmt: Optional[str] = None) -> bool:
+        """
+        Export selected channels to a file, dispatching on format.
+
+        Args:
+            output_path: Path for the output file
+            channel_names: List of channels to export
+            resample: Optional resampling rate in seconds
+            fmt: Explicit format ('csv' or 'parquet'). When omitted, the
+                format is inferred from the output path's extension.
+
+        Returns:
+            True if successful, False otherwise
+        """
+        fmt = (fmt or self.detect_export_format(output_path)).lower()
+
+        try:
+            df = self.get_channel_data(channel_names, resample)
+            if df is None:
+                logger.error("No data to export")
+                return False
+
+            if fmt == 'parquet':
+                # Requires a Parquet engine (pyarrow or fastparquet)
+                df.to_parquet(output_path, index=False)
+                logger.info(f"Exported to Parquet: {output_path}")
+            elif fmt == 'csv':
+                # Export to CSV with BOM so Excel detects UTF-8 correctly
+                df.to_csv(output_path, index=False, encoding='utf-8-sig')
+                logger.info(f"Exported to CSV: {output_path}")
+            else:
+                logger.error(f"Unsupported export format: {fmt}")
+                return False
+
+            return True
+
+        except Exception as e:
+            logger.error(f"Error exporting to {fmt} ({output_path}): {e}")
+            return False
+
     def export_to_csv(self, output_path: str, channel_names: List[str],
                      resample: Optional[float] = None) -> bool:
         """
-        Export selected channels to CSV
-        
+        Export selected channels to CSV.
+
+        Thin wrapper around :meth:`export_data` kept for backward
+        compatibility.
+
         Args:
             output_path: Path for output CSV file
             channel_names: List of channels to export
             resample: Optional resampling rate
-            
+
         Returns:
             True if successful, False otherwise
         """
-        try:
-            df = self.get_channel_data(channel_names, resample)
-            if df is None:
-                return False
-                
-            # Export to CSV with proper encoding
-            df.to_csv(output_path, index=False, encoding='utf-8-sig')
-            logger.info(f"Exported to CSV: {output_path}")
-            return True
-            
-        except Exception as e:
-            logger.error(f"Error exporting to CSV: {e}")
-            return False
+        return self.export_data(output_path, channel_names, resample, fmt='csv')
+
+    def export_to_parquet(self, output_path: str, channel_names: List[str],
+                          resample: Optional[float] = None) -> bool:
+        """
+        Export selected channels to a Parquet file.
+
+        Parquet is a compact, columnar format that loads much faster than
+        CSV in pandas/Polars/PyArrow and preserves numeric dtypes, which
+        makes it well suited to large measurement datasets.
+
+        Args:
+            output_path: Path for output Parquet file
+            channel_names: List of channels to export
+            resample: Optional resampling rate
+
+        Returns:
+            True if successful, False otherwise
+        """
+        return self.export_data(output_path, channel_names, resample, fmt='parquet')
     
     def get_file_info(self) -> Dict[str, Any]:
         """Get information about loaded file"""

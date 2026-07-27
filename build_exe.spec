@@ -10,6 +10,8 @@ a = Analysis(
     hiddenimports=[
         'asammdf',
         'pandas',
+        'pyarrow',
+        'pyarrow.parquet',
         'matplotlib',
         'numpy',
         'tkinter',

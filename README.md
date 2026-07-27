@@ -15,7 +15,9 @@
 - **Multi-format Support**: Load and process MF4, MDF, and DAT files
 - **Data Preview**: Browse and preview measurement data with channel information
 - **Channel Selection**: Search and select specific channels/labels with history tracking
+- **Select All / Clear**: One-click selection of all filtered channels
 - **CSV Export**: Convert measurement data to CSV format with optional resampling
+- **Parquet Export**: Save to columnar Parquet format — compact and much faster to load for large datasets
 - **Data Visualization**: Plot channel data using lightweight graphing library
 - **Variable Refresh Rate**: Support for data resampling at custom rates
 - **User Settings**: Automatic saving of preferences and label selection history
@@ -53,16 +55,21 @@ Download the latest release from the [Releases](https://github.com/sdrdx4100/mf4
 3. **Search Channels**: Use the search box to filter channels by name
 4. **Select Channels**: Click channels to select them (Ctrl+Click for multiple selections)
 5. **Configure Resampling**: Set the resample rate in seconds (0.0 for no resampling)
-6. **Export to CSV**: Click "Export Selected to CSV..." to save selected channels
+6. **Export**: Click "Export to CSV..." or "Export to Parquet..." to save selected channels
 7. **Plot Data**: Click "Plot Selected Channels" to visualize the data
 8. **History**: The application remembers your previous channel selections per file
+
+> **Tip:** Use "Select All" to grab every channel currently shown by the search
+> filter, and prefer **Parquet** over CSV for large exports — it produces smaller
+> files, loads far faster in pandas/Polars/PyArrow, and preserves numeric dtypes.
 
 ### Technical Details
 
 #### Dependencies
 
 - **asammdf**: For reading MF4/MDF files (industry-standard library)
-- **pandas**: For data manipulation and CSV export
+- **pandas**: For data manipulation and CSV/Parquet export
+- **pyarrow**: Parquet engine used for `.parquet` export
 - **matplotlib**: For data visualization
 - **tkinter**: For the graphical user interface (included with Python)
 
@@ -139,7 +146,9 @@ For issues, questions, or contributions, please visit the [GitHub repository](ht
 - **複数形式対応**: MF4、MDF、DATファイルの読み込みと処理
 - **データプレビュー**: チャネル情報付きで計測データを閲覧・プレビュー
 - **チャネル選択**: 検索機能と履歴追跡による特定チャネル/ラベルの選択
+- **全選択 / クリア**: 検索で絞り込んだチャネルをワンクリックで全選択
 - **CSV変換**: オプションのリサンプリング機能付きでCSV形式に変換
+- **Parquet変換**: 列指向のParquet形式に保存 — 大容量データでもコンパクトかつ高速に読み込み可能
 - **データ可視化**: 軽量なグラフライブラリでチャネルデータをプロット
 - **可変リフレッシュレート**: カスタムレートでのデータリサンプリング対応
 - **ユーザー設定**: 環境設定とラベル選択履歴の自動保存
@@ -177,16 +186,21 @@ For issues, questions, or contributions, please visit the [GitHub repository](ht
 3. **チャネルを検索**: 検索ボックスでチャネル名によるフィルタリング
 4. **チャネルを選択**: チャネルをクリックして選択（Ctrl+クリックで複数選択）
 5. **リサンプリング設定**: リサンプルレートを秒単位で設定（0.0はリサンプリングなし）
-6. **CSV変換**: 「Export Selected to CSV...」をクリックして選択チャネルを保存
+6. **変換**: 「Export to CSV...」または「Export to Parquet...」をクリックして選択チャネルを保存
 7. **データをプロット**: 「Plot Selected Channels」をクリックしてデータを可視化
 8. **履歴機能**: アプリケーションがファイルごとに以前のチャネル選択を記憶
+
+> **ヒント:** 「Select All」で検索フィルタに表示中の全チャネルをまとめて選択できます。
+> 大容量データを書き出す場合は CSV より **Parquet** を推奨します — ファイルが小さく、
+> pandas/Polars/PyArrow での読み込みが高速で、数値型もそのまま保持されます。
 
 ### 技術詳細
 
 #### 依存関係
 
 - **asammdf**: MF4/MDFファイル読み込み用（業界標準ライブラリ）
-- **pandas**: データ操作とCSV変換用
+- **pandas**: データ操作とCSV/Parquet変換用
+- **pyarrow**: `.parquet` 出力に使用するParquetエンジン
 - **matplotlib**: データ可視化用
 - **tkinter**: グラフィカルユーザーインターフェース用（Python付属）
 
